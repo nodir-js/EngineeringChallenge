@@ -1,22 +1,22 @@
-import express, {Request, Response} from 'express';
-import {getMachineHealth} from './machineHealth';
+import express from 'express';
+import { connect } from 'mongoose';
+import 'dotenv/config'
+import machineHealthRoute from './routes/machineHealthRoute';
+import authRoute from './routes/authRoute';
+import verifyToken from './middleware/authMiddleware';
 
+connect(process.env.MONGODB_CONNECTION_STRING!, {
+  dbName: 'engineering_challenge'
+})
 const app = express();
 const port = 3001;
 
 // Middleware to parse JSON request bodies
 app.use(express.json());
 
-// Endpoint to get machine health score
-app.post('/machine-health', (req: Request, res: Response) => {
-  const result = getMachineHealth(req);
-  if (result.error) {
-    res.status(400).json(result);
-  } else {
-    res.json(result);
-  }
-});
+app.use('/api/', authRoute)
+app.use('/api/', verifyToken, machineHealthRoute);
 
 app.listen(port, () => {
-  console.log(`API is listening at http://localhost:${port}`);
+  console.log(`API is listening at http://localhost:${port}/api`);
 });

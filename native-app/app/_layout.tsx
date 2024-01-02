@@ -1,9 +1,11 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { SplashScreen, Stack } from 'expo-router';
-import { useEffect } from 'react';
+import { SplashScreen, Stack, router } from 'expo-router';
+import { useContext, useEffect, useState } from 'react';
 import { useColorScheme } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import UserProvider, { UserContext } from '../context/UserContext';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -39,18 +41,57 @@ export default function RootLayout() {
     return null;
   }
 
-  return <RootLayoutNav />;
+  return (
+    <UserProvider>
+      <RootLayoutNav />
+    </UserProvider>
+  );
 }
 
 function RootLayoutNav() {
+  const [isUserLoaded, setIsUserLoaded] = useState(false);
   const colorScheme = useColorScheme();
+
+  const {
+    token,
+    username,
+    setToken,
+    setUsername,
+  } = useContext(UserContext);
+
+  useEffect(() => {
+    (async () => {
+      if (!isUserLoaded) {
+        const user = JSON.parse(await AsyncStorage.getItem('user') || "{}")
+        setIsUserLoaded(true);
+        if (user.token && user.username) {
+          setToken(user.token);
+          setUsername(user.username);
+        }
+      }
+    })()
+  }, [isUserLoaded])
+
+  useEffect(() => {
+    if (isUserLoaded) {
+      if (token && username) {
+        router.replace('/(tabs)');
+      } else {
+        router.replace('/login');
+      }
+    }
+  }, [isUserLoaded, token, username])
+
+  if (!isUserLoaded) return null;
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-      </Stack>
+        <Stack>
+          <Stack.Screen name="login" options={{ headerShown: false }} />
+          <Stack.Screen name="register" options={{ headerShown: false }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+        </Stack>
     </ThemeProvider>
   );
 }

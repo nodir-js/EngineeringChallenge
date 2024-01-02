@@ -1,19 +1,19 @@
-import {Button, Platform, StyleSheet} from 'react-native';
+import {Alert, Button, Platform, StyleSheet} from 'react-native';
 import {Text, View} from '../../components/Themed';
-import {Link, useFocusEffect} from 'expo-router';
+import {Link, router, useFocusEffect} from 'expo-router';
 import axios from 'axios';
 import {useMachineData} from '../useMachineData';
-import {useCallback, useState} from 'react';
+import {useCallback, useContext, useState} from 'react';
 import {PartsOfMachine} from '../../components/PartsOfMachine';
 import {MachineScore} from '../../components/MachineScore';
+import { UserContext } from '../../context/UserContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { PRODUCTION_API_ENDPOINT } from '../../constants/urls';
 
-let apiUrl: string =
-  'https://fancy-dolphin-65b07b.netlify.app/api/machine-health';
+let apiUrl: string = `${PRODUCTION_API_ENDPOINT}/api/machine-health`;
 
 if (__DEV__) {
-  apiUrl = `http://${
-    Platform?.OS === 'android' ? '10.0.2.2' : 'localhost'
-  }:3001/machine-health`;
+  apiUrl = `http://${Platform.select({ android: '10.0.2.2', ios: 'localhost' })}:3001/api/machine-health`;
 }
 
 export default function StateScreen() {
@@ -27,24 +27,45 @@ export default function StateScreen() {
     }, []),
   );
 
+  const {
+    token,
+    setToken,
+    setUsername,
+  } = useContext(UserContext);
+
   const calculateHealth = useCallback(async () => {
     try {
       const response = await axios.post(apiUrl, {
         machines: machineData?.machines,
+      }, {
+        headers: {
+					'Content-Type': 'application/json',
+					'Authorization': `Bearer ${token}`
+				}
       });
 
       if (response.data?.factory) {
         setScores(response.data);
       }
     } catch (error) {
-      console.error(error);
-      console.log(
-        `There was an error calculating health. ${
-          error.toString() === 'AxiosError: Network Error'
-            ? 'Is the api server started?'
-            : error
-        }`,
-      );
+      if (error?.response?.status !== 200) {
+        Alert.alert('Something went wrong!', error?.response?.data?.error, [
+          {
+            text: 'Ignore',
+            style: 'cancel',
+          },
+          {
+            text: 'Login',
+            onPress: async () => {
+              await AsyncStorage.setItem('user', JSON.stringify({}));
+              setToken(null);
+              setUsername(null);
+              router.replace('/login');
+            },
+            style: 'destructive',
+          },
+        ])
+      }
     }
   }, [machineData]);
 

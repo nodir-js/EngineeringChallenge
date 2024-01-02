@@ -1,0 +1,1 @@
+export const PRODUCTION_API_ENDPOINT = 'https://fancy-dolphin-65b07b.netlify.app'
