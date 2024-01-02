@@ -1,3 +1,10 @@
+# How to test:
+
+Manually download `MachineHealth.apk` file from the repo's root directory, install it and test it (it will use netlify-hosted function endpoint `https://engineeringchallenge.netlify.app`).
+
+To run on it local machine, make sure to create and populate `.env` file in `/backend` directory just like shown in `.env.example` file, and the rest of the steps are as it was before, documented on readme files in each project folder
+
+
 # Factory Health Monitor - Authentication, State Management, and Persistence
 
 ## Overview
